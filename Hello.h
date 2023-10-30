@@ -1,8 +1,9 @@
+#pragma once
+
 #include <stdio.h>
 #include <iostream>
 
 namespace Hello {
-
   class Speaker {
     
     public:
