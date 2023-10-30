@@ -5,7 +5,7 @@
             "type": "shell",
             "label": "cmake clean",
             "isBackground": false,
-            "command": "rm -rf ${workspaceFolder}/build/ && cmake -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc-9 -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/g++-9 -S${workspaceFolder} -B${workspaceFolder}/build -G 'Unix Makefiles' && cd ${workspaceFolder}/build && make",
+            "command": "rm -rf ${workspaceFolder}/build/ && cmake -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${workspaceFolder} -B${workspaceFolder}/build -G 'Unix Makefiles' && cd ${workspaceFolder}/build && make",
             "problemMatcher": [
                 {
                   "pattern": [
