@@ -1,2 +1,2 @@
 # VSCode Build and Debug Template with CMAKE
-Basic c++ hello world program with CMAKE build and VSCode debug configuration files. Requires cmake and gdb. The [Microsoft C/C++ VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) is also required to debug.
+Basic c++ hello world program with CMAKE build and VSCode debug configuration files. Requires cmake and gdb. The [Microsoft C/C++ VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) is also required to debug. Jetson docker requires qemu-aarch64-static and gdb-multiarch. 

@@ -1,0 +1,2 @@
+rm -rf ./build/ && cmake -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S. -B./build -G 'Unix Makefiles' && cd ./build && make
+# rm -rf ./build/ && mkdir ./build && cmake --build /workspace/test_apps/rest_api/cmake-debug-template/build --config Debug --target all -j 34 -- && cd ./build && make
