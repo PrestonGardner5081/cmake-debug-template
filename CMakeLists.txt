@@ -5,10 +5,13 @@ project(Hello)
 # Find libcurl
 find_package(CURL REQUIRED)
 
-#make debug
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-
 set(X86_COMPILE OFF)
+set(INCLUDE_DEBUG_SYMBOLS ON)
+
+if(INCLUDE_DEBUG_SYMBOLS)
+    #make debug 
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+endif()
 
 if(X86_COMPILE)
     # Set the path to the directory containing the required dynamic linker library
