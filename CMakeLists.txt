@@ -1,12 +1,16 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required(VERSION 3.20)
 
-project(Hello)
+project(Hello LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(X86_COMPILE OFF)
+set(INCLUDE_DEBUG_SYMBOLS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_PREFIX_PATH "/usr/aarch64-linux-gnu/")
 
 # Find libcurl
 find_package(CURL REQUIRED)
 
-set(X86_COMPILE OFF)
-set(INCLUDE_DEBUG_SYMBOLS ON)
+include_directories(${CURL_INCLUDE_DIRS})
 
 if(INCLUDE_DEBUG_SYMBOLS)
     #make debug 
@@ -22,4 +26,5 @@ if(X86_COMPILE)
 endif()
 
 ADD_EXECUTABLE(main main.cpp)
-TARGET_LINK_LIBRARIES(main)
+TARGET_LINK_LIBRARIES(main ${CURL_LIBRARIES})
+# TARGET_LINK_LIBRARIES(main)
