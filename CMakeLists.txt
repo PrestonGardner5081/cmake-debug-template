@@ -25,6 +25,5 @@ if(X86_COMPILE)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--dynamic-linker=/usr/aarch64-linux-gnu/lib/ld-linux-aarch64.so.1")
 endif()
 
-ADD_EXECUTABLE(main main.cpp)
+ADD_EXECUTABLE(main main.cpp CommonEndpointApi.cpp)
 TARGET_LINK_LIBRARIES(main ${CURL_LIBRARIES})
-# TARGET_LINK_LIBRARIES(main)
