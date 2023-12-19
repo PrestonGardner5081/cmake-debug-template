@@ -14,6 +14,7 @@ include_directories(${CURL_INCLUDE_DIRS})
 
 if(INCLUDE_DEBUG_SYMBOLS)
     #make debug 
+    set(CMAKE_BUILD_TYPE Debug)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 endif()
 
