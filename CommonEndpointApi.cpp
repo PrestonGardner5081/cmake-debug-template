@@ -1,10 +1,10 @@
 #include "CommonEndpointApi.h"
 #include <cstring>
-#include <iostream>
-
 
 #define DEBUG_MODE //FIXME remove for prod
 #define USE_TEST_SERVER //FIXME remove for prod
+
+using json = nlohmann::json;
 
 void CommonEndpointApi::initResourceConnection(){
     this->resourceCurlPtr = curl_easy_init();
@@ -101,11 +101,15 @@ bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::
         return false;
     }
 
-    curl_easy_setopt(authCurlPtr, CURLOPT_HTTPGET, 1L);//set type to GET
+    curl_easy_setopt(authCurlPtr, CURLOPT_HTTPGET, 1L);//set request type to GET
     
-    struct ResponseData responseData = { .data = nullptr, .size = 0, .response_code = 0 };
-    curl_easy_setopt(authCurlPtr, CURLOPT_WRITEDATA, &responseData);//pass struct to write callback 
-    curl_easy_setopt(authCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set function to use on get
+    struct ResponseData responseHeader = { .data = nullptr, .size = 0};
+    curl_easy_setopt(authCurlPtr, CURLOPT_HEADERDATA, &responseHeader);//pass struct to header callback 
+    curl_easy_setopt(authCurlPtr, CURLOPT_HEADERFUNCTION, CommonEndpointApi::HeaderCallback); //set function to handle response header
+
+    struct ResponseData responseBody = { .data = nullptr, .size = 0};
+    curl_easy_setopt(authCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 
+    curl_easy_setopt(authCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set function to handle response body
 
     std::string usrpwd_str = userName + ":" + password;
     
@@ -115,20 +119,35 @@ bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::
     if(res != CURLE_OK){
         fprintf(stderr, "CommonEndpointApi::authenticateWithUserPassword() curl_easy_perform() failed: %s\n",
                 curl_easy_strerror(res));
+        
+        free(responseBody.data);
         return false;
     }
-
-    curl_easy_getinfo(authCurlPtr, CURLINFO_RESPONSE_CODE, &(responseData.response_code)); //get response code from last request
-
-    if (responseData.response_code == 200L){
-
-    }
     
-    #ifdef DEBUG_MODE
-        std::cout << "Successful GET on " << this->authUrl <<  "\n" << std::endl;
-    #endif
-    free(responseData.data);
-    return true;
+    long responseCode = 0L; 
+    curl_easy_getinfo(authCurlPtr, CURLINFO_RESPONSE_CODE, &responseCode); //get response code from last request
+
+    if (responseCode == 200L && responseBody.data != nullptr){
+        std::string token;
+
+        if (!getTokenFromResponse(responseBody.data, token)){
+            free(responseBody.data);
+            return false;
+        }
+        //TODO store token or something
+    
+        #ifdef DEBUG_MODE
+            std::cout << "Successful GET on " << this->authUrl <<  "\n" << std::endl;
+        #endif
+
+        free(responseBody.data);
+        return true;
+    }
+    else{
+        fprintf(stderr, "CommonEndpointApi::authenticateWithUserPassword() Failed to get token from server\n");
+        free(responseBody.data);
+        return false;
+    }
 }
 
 bool CommonEndpointApi::performResourceUrlGet(){
@@ -143,8 +162,8 @@ bool CommonEndpointApi::performResourceUrlGet(){
 
     curl_easy_setopt(resourceCurlPtr, CURLOPT_HTTPGET, 1L);    
 
-    struct ResponseData responseData = { .data = nullptr, .size = 0, .response_code = 0 };
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEDATA, &responseData);//pass struct to write callback 
+    struct ResponseData responseBody = { .data = nullptr, .size = 0};
+    curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 
     curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set function to use on get
     CURLcode res = curl_easy_perform(this->resourceCurlPtr);
 
@@ -158,7 +177,7 @@ bool CommonEndpointApi::performResourceUrlGet(){
         std::cout << "Successful GET on " << this->resourceUrl <<  "\n" << std::endl;
     #endif
 
-    free(responseData.data);
+    free(responseBody.data);
     return true;
 };
 
@@ -175,8 +194,8 @@ bool CommonEndpointApi::performResourceUrlPost(const char* data){
     curl_easy_setopt(resourceCurlPtr, CURLOPT_POST, 1L); // Set the request type to POST
     curl_easy_setopt(resourceCurlPtr, CURLOPT_POSTFIELDS, data);
 
-    struct ResponseData responseData = { .data = nullptr, .size = 0, .response_code = 0 };
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEDATA, &responseData);//pass struct to write callback 
+    struct ResponseData responseBody = { .data = nullptr, .size = 0};
+    curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 
     curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set callback for handling response
     
     struct curl_slist *headers = NULL; 
@@ -195,9 +214,12 @@ bool CommonEndpointApi::performResourceUrlPost(const char* data){
         std::cout << "Successful POST on " << this->resourceUrl << "\n" << std::endl;
     #endif
 
-    free(responseData.data);
+    free(responseBody.data);
     return true;
 }
+
+
+/*Static helper functions*/
 
 size_t CommonEndpointApi::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp){
     size_t realsize = size * nmemb;
@@ -205,7 +227,7 @@ size_t CommonEndpointApi::WriteCallback(void* contents, size_t size, size_t nmem
     mem->data = reinterpret_cast<char*>(std::malloc(realsize + 1));
 
     if (mem->data == nullptr) {
-        fprintf(stderr, "CommonEndpointApi::AuthCallback() failed to realloc mem->data\n");
+        fprintf(stderr, "CommonEndpointApi::WriteCallback() failed to realloc mem->data\n");
         return 0;
     }
 
@@ -219,4 +241,76 @@ size_t CommonEndpointApi::WriteCallback(void* contents, size_t size, size_t nmem
     #endif
 
     return realsize;
+}
+
+size_t CommonEndpointApi::HeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata){ //We probably shouldnt reuse WriteCallback even though it is similar
+    size_t realsize = size * nitems;
+    struct ResponseData* mem = reinterpret_cast<struct ResponseData*>(userdata);
+    mem->data = reinterpret_cast<char*>(std::malloc(realsize + 1));
+
+    if (mem->data == nullptr) {
+        fprintf(stderr, "CommonEndpointApi::HeaderCallback() failed to realloc mem->data\n");
+        return 0;
+    }
+
+    std::memcpy(mem->data, buffer, realsize); //copy data to struct
+    mem->data[realsize] = '\0'; //add null termination
+    mem->size = realsize;
+
+    #ifdef DEBUG_MODE
+        std::string headerStr = mem->data;
+        std::cout << "Headers: " << headerStr << std::endl;
+    #endif
+
+    return realsize;
+}
+
+bool CommonEndpointApi::getAllKeys(const json& jsonObject, std::vector<std::string>& keys) {
+    if (jsonObject.is_object()){
+        for (auto it = jsonObject.begin(); it != jsonObject.end(); ++it) {
+            keys.push_back(it.key());
+        }
+        return true;
+    }
+
+    fprintf(stderr, "CommonEndpointApi::getAllKeys() Parameter jsonObject was not a json object\n");
+    return false;
+}
+
+bool CommonEndpointApi::getTokenFromResponse(char* data, std::string& token){
+    try {
+        json responseBodyJson = json::parse(data);
+        std::vector<std::string> keys;
+        if (!getAllKeys(responseBodyJson, keys))
+            return false; 
+
+        if (std::find(keys.begin(), keys.end(), "tokens") != keys.end()){
+            json tokens = responseBodyJson["tokens"];
+            
+            if (!tokens.is_array()){
+                fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() value for 'tokens' was not an array\n");
+                return false;
+            }
+                
+            if(!tokens[0].is_string()){
+                fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() token was not a string\n");
+                return false;
+            }
+
+            token = tokens[0].get<std::string>();
+
+            std::cout << "Debugging: FIXME remove this line" << std::endl;//FIXME
+        }
+        else{
+            fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() No token found\n");
+            return false;
+        }
+        
+    } catch (const json::parse_error& e) {
+        // Handle the parse error
+        std::cerr << "CommonEndpointApi::authenticateWithUserPassword() Error parsing JSON: " << e.what() << " at position " << e.byte << std::endl;
+        return false;
+    }
+
+    return true;
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <curl/curl.h>
+#include <iostream>
+#include <nlohmann/json.hpp>
 
 class CommonEndpointApi
 {
@@ -8,7 +10,6 @@ private:
     struct ResponseData {
         char* data;
         size_t size;
-        long response_code;
     };
 
     std::string resourceUrl;
@@ -17,8 +18,9 @@ private:
     CURL *authCurlPtr = nullptr;
 
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
-    static size_t AuthCallback(void* contents, size_t size, size_t nmemb, void* userp);
-
+    static size_t HeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata);
+    static bool getAllKeys(const nlohmann::json& jsonObject, std::vector<std::string>& keys);
+    static bool getTokenFromResponse(char* data, std::string& token);
 
 public:
     void initResourceConnection();

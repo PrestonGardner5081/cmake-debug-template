@@ -5,10 +5,8 @@
 #include <curl/curl.h>
 #include "CommonEndpointApi.h"
 
-// #define DEBUG_MODE
-
-
 int main() {
+
 
 
     CommonEndpointApi api = CommonEndpointApi("https://158.101.127.192:8443/simple_storage", "https://158.101.127.192:8443/auth");
