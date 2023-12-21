@@ -1,7 +1,5 @@
 #pragma once
-#include <string>
 #include <curl/curl.h>
-#include <iostream>
 #include <nlohmann/json.hpp>
 
 class CommonEndpointApi
@@ -38,7 +36,7 @@ public:
 
     std::string getAuthUrl();
 
-    bool authenticateWithUserPassword(std::string userName, std::string password);
+    bool authenticateWithUserPassword(std::string username, std::string password);
 
     bool performResourceUrlGet();
 

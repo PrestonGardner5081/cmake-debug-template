@@ -29,5 +29,19 @@ endif()
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json)
 
-ADD_EXECUTABLE(main main.cpp CommonEndpointApi.cpp)
+#Generate static library
+# set(SOURCES CommonEndpointApi.cpp)
+# add_library(CommonEndpointApi SHARED ${SOURCES})
+# TARGET_LINK_LIBRARIES(CommonEndpointApi PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json)
+
+#Test executable with main
+ADD_EXECUTABLE(main src/main.cpp src/CommonEndpointApi.cpp)
 TARGET_LINK_LIBRARIES(main PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json)
+
+#JWT setup:
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cpp-jwt)
+
+# ADD_EXECUTABLE(main main.cpp CommonEndpointApi.cpp)
+# TARGET_LINK_LIBRARIES(main PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json cpp-jwt)
+
+

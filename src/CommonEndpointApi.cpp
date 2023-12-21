@@ -1,8 +1,8 @@
 #include "CommonEndpointApi.h"
-#include <cstring>
+#include <iostream>
 
 #define DEBUG_MODE //FIXME remove for prod
-#define USE_TEST_SERVER //FIXME remove for prod
+// #define USE_TEST_SERVER //FIXME remove for prod
 
 using json = nlohmann::json;
 
@@ -91,9 +91,9 @@ std::string CommonEndpointApi::getAuthUrl(){
     return this->authUrl;
 }
 
-bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::string password){
+bool CommonEndpointApi::authenticateWithUserPassword(std::string username, std::string password){
     #ifdef DEBUG_MODE
-        std::cout << "Attempting auth GET on " << this->authUrl <<  "\n";
+        std::cout << "Attempting auth POST on " << this->authUrl <<  "\n";
     #endif
 
     if (this->authCurlPtr == nullptr || this->authUrl.empty()){
@@ -101,7 +101,8 @@ bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::
         return false;
     }
 
-    curl_easy_setopt(authCurlPtr, CURLOPT_HTTPGET, 1L);//set request type to GET
+    curl_easy_setopt(resourceCurlPtr, CURLOPT_CERTINFO, 1L); //request cert
+    curl_easy_setopt(resourceCurlPtr, CURLOPT_POST, 1L); // Set the request type to POST
     
     struct ResponseData responseHeader = { .data = nullptr, .size = 0};
     curl_easy_setopt(authCurlPtr, CURLOPT_HEADERDATA, &responseHeader);//pass struct to header callback 
@@ -111,9 +112,12 @@ bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::
     curl_easy_setopt(authCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 
     curl_easy_setopt(authCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set function to handle response body
 
-    std::string usrpwd_str = userName + ":" + password;
+    std::string usrpwd_str = "username=" + username + "&password=" + password;
+    curl_easy_setopt(this->authCurlPtr, CURLOPT_POSTFIELDS, usrpwd_str.c_str());
     
-    curl_easy_setopt(authCurlPtr, CURLOPT_USERPWD, usrpwd_str.c_str()); //set authorization header
+    struct curl_slist *headers = NULL; 
+    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded"); //TODO, maybe use enum for content type? 
+    curl_easy_setopt(this->authCurlPtr, CURLOPT_HTTPHEADER, headers); // Set the Content-Type header for JSON
     CURLcode res = curl_easy_perform(this->authCurlPtr);
 
     if(res != CURLE_OK){
@@ -125,7 +129,7 @@ bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::
     }
     
     long responseCode = 0L; 
-    curl_easy_getinfo(authCurlPtr, CURLINFO_RESPONSE_CODE, &responseCode); //get response code from last request
+    curl_easy_getinfo(this->authCurlPtr, CURLINFO_RESPONSE_CODE, &responseCode); //get response code from last request
 
     if (responseCode == 200L && responseBody.data != nullptr){
         std::string token;
@@ -134,10 +138,14 @@ bool CommonEndpointApi::authenticateWithUserPassword(std::string userName, std::
             free(responseBody.data);
             return false;
         }
+
+        struct curl_certinfo *certinfo;
+        CURLcode certInfoStatus = curl_easy_getinfo(this->authCurlPtr, CURLINFO_CERTINFO, &certinfo);
+        
         //TODO store token or something
-    
+
         #ifdef DEBUG_MODE
-            std::cout << "Successful GET on " << this->authUrl <<  "\n" << std::endl;
+            std::cout << "Successful POST on " << this->authUrl <<  "\n" << std::endl;
         #endif
 
         free(responseBody.data);
@@ -191,16 +199,16 @@ bool CommonEndpointApi::performResourceUrlPost(const char* data){
         return false;
     }
 
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_POST, 1L); // Set the request type to POST
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_POSTFIELDS, data);
+    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_POST, 1L); // Set the request type to POST
+    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_POSTFIELDS, data);
 
     struct ResponseData responseBody = { .data = nullptr, .size = 0};
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set callback for handling response
+    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 
+    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_WRITEFUNCTION, CommonEndpointApi::WriteCallback); //set callback for handling response
     
     struct curl_slist *headers = NULL; 
     headers = curl_slist_append(headers, "Content-Type: application/json"); //FIXME, maybe use enum to 
-    curl_easy_setopt(resourceCurlPtr, CURLOPT_HTTPHEADER, headers); // Set the Content-Type header for JSON
+    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_HTTPHEADER, headers); // Set the Content-Type header for JSON
 
     CURLcode res = curl_easy_perform(this->resourceCurlPtr);
 
@@ -280,32 +288,17 @@ bool CommonEndpointApi::getAllKeys(const json& jsonObject, std::vector<std::stri
 bool CommonEndpointApi::getTokenFromResponse(char* data, std::string& token){
     try {
         json responseBodyJson = json::parse(data);
-        std::vector<std::string> keys;
-        if (!getAllKeys(responseBodyJson, keys))
-            return false; 
-
-        if (std::find(keys.begin(), keys.end(), "tokens") != keys.end()){
-            json tokens = responseBodyJson["tokens"];
-            
-            if (!tokens.is_array()){
-                fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() value for 'tokens' was not an array\n");
-                return false;
-            }
-                
-            if(!tokens[0].is_string()){
-                fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() token was not a string\n");
-                return false;
-            }
-
-            token = tokens[0].get<std::string>();
-
-            std::cout << "Debugging: FIXME remove this line" << std::endl;//FIXME
-        }
-        else{
-            fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() No token found\n");
+        if(!responseBodyJson.is_array() || responseBodyJson.size() < 1){
+            fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() Error parsing array from body\n");
             return false;
         }
-        
+
+        if(!responseBodyJson[0].is_string()){
+            fprintf(stderr, "CommonEndpointApi::getTokenFromResponse() token was not a string\n");
+            return false;
+        }
+
+        token = responseBodyJson[0];  
     } catch (const json::parse_error& e) {
         // Handle the parse error
         std::cerr << "CommonEndpointApi::authenticateWithUserPassword() Error parsing JSON: " << e.what() << " at position " << e.byte << std::endl;
