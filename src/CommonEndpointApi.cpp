@@ -1,5 +1,6 @@
 #include "CommonEndpointApi.h"
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 #define DEBUG_MODE //FIXME remove for prod
 // #define USE_TEST_SERVER //FIXME remove for prod
@@ -271,18 +272,6 @@ size_t CommonEndpointApi::HeaderCallback(char *buffer, size_t size, size_t nitem
     #endif
 
     return realsize;
-}
-
-bool CommonEndpointApi::getAllKeys(const json& jsonObject, std::vector<std::string>& keys) {
-    if (jsonObject.is_object()){
-        for (auto it = jsonObject.begin(); it != jsonObject.end(); ++it) {
-            keys.push_back(it.key());
-        }
-        return true;
-    }
-
-    fprintf(stderr, "CommonEndpointApi::getAllKeys() Parameter jsonObject was not a json object\n");
-    return false;
 }
 
 bool CommonEndpointApi::getTokenFromResponse(char* data, std::string& token){

@@ -1,6 +1,6 @@
 #pragma once
 #include <curl/curl.h>
-#include <nlohmann/json.hpp>
+#include <string>
 
 class CommonEndpointApi
 {
@@ -17,7 +17,6 @@ private:
 
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
     static size_t HeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata);
-    static bool getAllKeys(const nlohmann::json& jsonObject, std::vector<std::string>& keys);
     static bool getTokenFromResponse(char* data, std::string& token);
 
 public:
