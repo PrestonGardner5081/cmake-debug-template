@@ -8,7 +8,7 @@ int main() {
     // // api.authenticateWithUserPassword("badUser", "pswd98765456831545524253");
     // api.performResourceUrlGet();
 
-    // const char *post_data = "{\"test_key\": \"test_value\"}"; // Set the POST data
+    // std::string post_data = "{\"test_key\": \"test_value\"}"; // Set the POST data
     // api.setResourceUrl("https://158.101.127.192:8443/simple_storage");
     // api.performResourceUrlPost(post_data);    
     // api.performResourceUrlGet();

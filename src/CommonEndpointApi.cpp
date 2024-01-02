@@ -16,7 +16,7 @@ void CommonEndpointApi::initResourceConnection(){
     #endif
     #ifdef USE_TEST_SERVER
         curl_easy_setopt(this->resourceCurlPtr, CURLOPT_SSL_VERIFYHOST, 0L); //turn off SSL hostname verification
-        curl_easy_setopt(this->resourceCurlPtr, CURLOPT_CAINFO, "./test_server.cert"); //use test cert 
+        curl_easy_setopt(this->resourceCurlPtr, CURLOPT_CAINFO, "src/test_server.cert"); //use test cert 
     #endif
 }
 
@@ -29,7 +29,7 @@ void CommonEndpointApi::initAuthConnection(){
     #endif
     #ifdef USE_TEST_SERVER
         curl_easy_setopt(this->authCurlPtr, CURLOPT_SSL_VERIFYHOST, 0L); //turn off SSL hostname verification
-        curl_easy_setopt(this->authCurlPtr, CURLOPT_CAINFO, "./test_server.cert"); //use test cert 
+        curl_easy_setopt(this->authCurlPtr, CURLOPT_CAINFO, "src/test_server.cert"); //use test cert 
     #endif
 }
 
@@ -190,7 +190,7 @@ bool CommonEndpointApi::performResourceUrlGet(){
     return true;
 };
 
-bool CommonEndpointApi::performResourceUrlPost(const char* data){
+bool CommonEndpointApi::performResourceUrlPost(std::string data){
     #ifdef DEBUG_MODE
         std::cout << "Attempting POST on " << this->resourceUrl <<  "\n";
     #endif
@@ -201,7 +201,7 @@ bool CommonEndpointApi::performResourceUrlPost(const char* data){
     }
 
     curl_easy_setopt(this->resourceCurlPtr, CURLOPT_POST, 1L); // Set the request type to POST
-    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_POSTFIELDS, data);
+    curl_easy_setopt(this->resourceCurlPtr, CURLOPT_POSTFIELDS, data.c_str());
 
     struct ResponseData responseBody = { .data = nullptr, .size = 0};
     curl_easy_setopt(this->resourceCurlPtr, CURLOPT_WRITEDATA, &responseBody);//pass struct to write callback 

@@ -39,5 +39,5 @@ public:
 
     bool performResourceUrlGet();
 
-    bool performResourceUrlPost(const char* data);
+    bool performResourceUrlPost(std::string data);
 };
