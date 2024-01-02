@@ -1,15 +1,7 @@
-#include <errno.h>
-#include <stdlib.h>
-#include <string>
-#include <iostream>
-#include <curl/curl.h>
 #include "CommonEndpointApi.h"
 
 int main() {
-
-
-
-    // CommonEndpointApi api = CommonEndpointApi("https://158.101.127.192:8443/simple_storage", "https://158.101.127.192:8443/auth");https://trident.sensorops.io/api/auth/token
+    // CommonEndpointApi api = CommonEndpointApi("https://158.101.127.192:8443/simple_storage", "https://172.18.96.1:8443/auth");//https://trident.sensorops.io/api/auth/token
     CommonEndpointApi api = CommonEndpointApi("https://158.101.127.192:8443/simple_storage", "https://trident.sensorops.io/api/auth/token");
 
     api.authenticateWithUserPassword("preston", "openwater");
