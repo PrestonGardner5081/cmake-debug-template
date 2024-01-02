@@ -29,6 +29,11 @@ endif()
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/json)
 
+#Generate shared library as libCommonEndpointApi.so
+set(SOURCES src/CommonEndpointApi.cpp)
+add_library(CommonEndpointApi SHARED ${SOURCES})
+TARGET_LINK_LIBRARIES(CommonEndpointApi PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json)
+
 #Swig config
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
@@ -37,19 +42,14 @@ find_package(Python COMPONENTS Development REQUIRED)
 include_directories(${Python_INCLUDE_DIRS})
 include_directories("./src")
 set_property(SOURCE src/common_endpoint_api.i PROPERTY CPLUSPLUS ON)
+set_property(SOURCE src/common_endpoint_api.i PROPERTY SWIG_FLAGS "-includeall")
 set_property(SOURCE src/common_endpoint_api.i PROPERTY SWIG_MODULE_NAME common_endpoint_api)
 swig_add_library(common_endpoint_api TYPE SHARED LANGUAGE python SOURCES src/common_endpoint_api.i)
-swig_link_libraries(common_endpoint_api)
+swig_link_libraries(common_endpoint_api CommonEndpointApi)
 
-
-#Generate shared library
-set(SOURCES src/CommonEndpointApi.cpp)
-add_library(CommonEndpointApi SHARED ${SOURCES})
-TARGET_LINK_LIBRARIES(CommonEndpointApi PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json)
-
-#Test executable with main
-ADD_EXECUTABLE(main src/main.cpp src/CommonEndpointApi.cpp)
-TARGET_LINK_LIBRARIES(main PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json)
+#Test libCommonEndpointApi.so with main
+ADD_EXECUTABLE(main src/main.cpp)
+TARGET_LINK_LIBRARIES(main PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json CommonEndpointApi)
 
 #JWT setup:
 # add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cpp-jwt)
