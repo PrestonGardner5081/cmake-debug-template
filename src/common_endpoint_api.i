@@ -7,10 +7,6 @@
 
 %include "std_string.i"
 
-%typemap(in) std::string {
-    $1 = PyString_AsString($input);
-}
-
 class CommonEndpointApi {
 public:
     CommonEndpointApi();
