@@ -47,9 +47,13 @@ set_property(SOURCE src/common_endpoint_api.i PROPERTY SWIG_MODULE_NAME common_e
 swig_add_library(common_endpoint_api TYPE SHARED LANGUAGE python SOURCES src/common_endpoint_api.i)
 swig_link_libraries(common_endpoint_api CommonEndpointApi)
 
-#Test libCommonEndpointApi.so with main
+# #Test libCommonEndpointApi.so with main
 ADD_EXECUTABLE(main src/main.cpp)
 TARGET_LINK_LIBRARIES(main PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json CommonEndpointApi)
+
+#Test CommonEndpointApi.cpp with main
+# ADD_EXECUTABLE(main src/main.cpp src/CommonEndpointApi.cpp)
+# TARGET_LINK_LIBRARIES(main PRIVATE ${CURL_LIBRARIES} nlohmann_json::nlohmann_json)
 
 #JWT setup:
 # add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/cpp-jwt)
